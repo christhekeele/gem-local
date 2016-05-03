@@ -39,7 +39,37 @@ When you want to use the remote version again, run
 gem local ignore my-dependency
 ```
 
-You can use/ignore multiple gems by supplying a list, or you can use/ignore all at once by not specifying any gem in particular.
+These commands (and their aliases--see the docs) work for multiple registered gems at once, as well as all registered gems if you don't specify any.
+
+```sh
+gem local status
+# off: foo @ /Users/rubyist/code/oss/foo
+# on:  bar @ /Users/rubyist/code/oss/bar
+# on:  fizz @ /Users/rubyist/code/oss/fizz
+# on:  buzz @ /Users/rubyist/code/oss/buzz
+# off:  metasyntactic @ /Users/rubyist/code/oss/variable
+
+gem local ignore bar fizz
+# off: foo @ /Users/rubyist/code/oss/foo
+# off: bar @ /Users/rubyist/code/oss/bar
+# off: fizz @ /Users/rubyist/code/oss/fizz
+# on:  buzz @ /Users/rubyist/code/oss/buzz
+# off:  metasyntactic @ /Users/rubyist/code/oss/variable
+
+gem local use
+# on:  foo @ /Users/rubyist/code/oss/foo
+# on:  bar @ /Users/rubyist/code/oss/bar
+# on:  fizz @ /Users/rubyist/code/oss/fizz
+# on:  buzz @ /Users/rubyist/code/oss/buzz
+# on:  metasyntactic @ /Users/rubyist/code/oss/variable
+
+gem local ignore
+# off: foo @ /Users/rubyist/code/oss/foo
+# off: bar @ /Users/rubyist/code/oss/bar
+# off: fizz @ /Users/rubyist/code/oss/fizz
+# off: buzz @ /Users/rubyist/code/oss/buzz
+# off: metasyntactic @ /Users/rubyist/code/oss/variable
+```
 
 If invocations of `bundle config local...` cause your `.gemlocal` file to get out of sync with bundler's settings, run
 
