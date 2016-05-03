@@ -2,83 +2,81 @@ require 'bundler'
 
 class Gem::Commands::LocalCommand < Gem::Command
   
+  class Setting
+    attr_accessor :location, :status
+    def initialize(location,  status = "on")
+      @location, @status = location, status
+    end
+  end
+  
   def initialize
-    super("local", "Toggles bundler's local gem configuration for you.")
+    super("local", "A configuration manager for bundler's local gem settings.")
   end
   
   def description
     <<-DESC
-    The `local` command allows you to save, toggle, and recall per-project usage of `bundle config local.<gem>` settings.
+The `gem local` command allows you to save, toggle, and recall per-project usage of `bundle config local.<gem>` settings.
     DESC
   end
   
   def arguments
     <<-ARGS
-    add <gem> <path> | Adds or overwrites a local gem configuration.
-    show <gem>       | Displays all or a particular local gem configuration.
-    remove <gem>     | Removes a local gem configuration.
-    on               | Turns local gems on.
-    off              | Turns local gems off.
-    ignore           | Adds `.gemlocal` artifact to project .gitignore.
-    help <cmd>       | Displays this message information about a command.
+add <gem> <path> | Adds or overwrites a local gem configuration.
+show [gem]       | Displays all or a particular local gem configuration.
+remove <gem>     | Removes a local gem from `gem local` configuration.
+on [gem, ...]    | Turns local gem(s) on.
+off [gem, ...]   | Turns local gem(s) off.
+ignore           | Adds `.gemlocal` artifact to project .gitignore.
+help [cmd]       | Displays help information.
     ARGS
   end
   
-  def cmds
-    @cmds ||= {
-      "add" =>    "Adds or overwrites a local gem configuration.",
-      "show" =>   "Displayes the current local gem configuration.",
-      "remove" => "Removes a local gem configuration.",
-      "on" =>     "Turns local gems on.",
-      "off" =>    "Turns local gems off.",
-      "ignore" => "Adds `.gemlocal` artifact to project .gitignore.",
-      "help" =>   "Displays this message.",
-    }
+  def usage
+    "#{program_name} subcommand <gem> <path>" + "\n" + arguments
   end
   
   def execute
     if cmd = options[:args].shift
-      if cmds.keys.include? cmd
-        send cmd, *options[:args]
+      if available_cmds.include? cmd
+        public_send cmd, *options[:args]
       else
-        raise "`gem local #{@cmd}` is not a valid command, try:\n" + arguments
+        raise "`gem local #{cmd}` is not a valid command, try:\n" + arguments
       end
     else
       help
     end
   end
-  
-  # def defaults_str
-  #   
-  # end
-  
-  # def usage
-  #   
-  # end
-  
-private
 
-# commands
+# COMMANDS
 
-  def add(name = nil, path = nil, *args)
-    if name and path and args.empty?
-      write_config(config.merge({name => path}))
-    else
-      raise "`gem local add` takes exactly two arguments: a gem name and the local path to it"
-    end
-  end
-
-  def show(name = nil, *args)
-    if name and args.empty?
-      if path = config[name]
-        puts path
-      else
-        raise "`gem local show` could not find `#{name}` in #{find_config}"
+  def add(name = nil, location = nil, *args)
+    if name and location and args.empty?
+      setting = Setting.new(location)
+      if bundler_add name, setting
+        update_config(name, :status, "on")
       end
     else
-      raise "`gem local show` takes exactly one argument: a gem name to remove from the local path list"
+      arity_error __method__
     end
   end
+  alias_method :new, :add
+
+  def show(name = nil, *args)
+    if not name and args.empty?
+      config.each do |name, setting|
+        puts show_setting_for(name, setting)
+      end
+    elsif name
+      if setting = config[name]
+        puts show_setting_for(name, setting)
+      else
+        raise "`gem local show` could not find `#{name}` in:\n#{find_config}"
+      end
+    else
+      arity_error __method__
+    end
+  end
+  alias_method :status, :show
 
   def remove(name = nil, *args)
     if name and args.empty?
@@ -86,74 +84,202 @@ private
       new_config.delete(name)
       write_config(new_config)
     else
-      raise "`gem local remove` takes exactly one argument: a gem name to remove from the local path list"
+      arity_error __method__
     end
   end
+  alias_method :delete, :remove
   
-  def on(*args)
-    if args.empty?
-      config.each do |name, location|
-        if Bundler.settings["local.#{name}"] = location
-          puts "Activated local gem `#{name}` at `#{location}`"
+  def on(*names)
+    if names.empty?
+      config.each do |name, setting|
+        if bundler_add name, setting
+          update_config(name, :status, "on")
         end
       end
     else
-      raise "`gem local on` takes no arguments"
+      names.each do |name|
+        if setting = config[name]
+          if bundler_add name, setting
+            update_config(name, :status, "on")
+          else
+            raise "Could not activate gem, make sure `bundle config local.#{name}` #{setting.location} succeeds"
+          end
+        else
+          raise "`gem local on` could not find `#{name}` in:\n#{find_config}"
+        end
+      end
+    # else
+    #   arity_error __method__
     end    
   end
+  alias_method :use, :on
+  alias_method :activate, :on
+  alias_method :enable, :on
+  alias_method :renable, :on
+  alias_method :reactivate, :on
   
-  def off(*args)
-    if args.empty?
-      config.each do |name, location|
-        if Bundler.settings.delete "local.#{name}"
-          puts "Deactivated local gem `#{name}` from `#{location}`"
+  def off(*names)
+    if names.empty?
+      config.each do |name, setting|
+        if bundler_remove name, setting
+          update_config(name, :status, "off")
         end
       end
     else
-      raise "`gem local off` takes no arguments"
+      names.each do |name|
+        if setting = config[name]
+          if bundler_add name, setting
+            update_config(name, :status, "off")
+          else
+            raise "Could not deactivate gem, make sure `bundle config --delete local.#{name}` succeeds"
+          end
+        else
+          raise "`gem local off` could not find `#{name}` in:\n#{find_config}"
+        end
+      end
+    # else
+    #   arity_error __method__
     end    
   end
+  alias_method :ignore, :off
+  alias_method :deactivate, :off
+  alias_method :disable, :off
   
-  def ignore(*args)
+  def install(*args)
     if args.empty?
       File.open(find_file('.gitignore'), "a+") do |file|
-        file.puts '.gemlocal'
+        %w[.bundle .gemlocal].each do |ignorable|
+          unless file.lines.any?{ |line| line.include? ignorable }
+            file.puts ignorable 
+          end
+        end
       end
     else
-      raise "`gem local ignore` takes no arguments"
+      arity_error __method__
     end    
   end
+  alias_method :init, :install
   
   def help(cmd = nil, *args)
     if not cmd and args.empty?
       puts description + "\n" + arguments
     elsif cmd
-      puts "USAGE: " + cmds[cmd]
+      puts info_for(__method__)
+    else
+      arity_error __method__
     end    
   end
   
-# plumbing
+private
+
+# COMMANDS
+
+  def cmds
+    @cmds ||= {
+      "add"    => {
+        description: "Adds or overwrites a local gem configuration and activates the gem from sourcein bundler.",
+        usage: "add <gem> <path>",
+        arguments: "takes exactly two arguments",
+        aliases: %w[new],
+      },
+      "show"   => {
+        description: "Displays the current local gem configuration, or the specified gem's config.",
+        usage: "show [gem]",
+        arguments: "takes zero or one arguments",
+        aliases: %w[status],
+      },
+      "remove" => {
+        description: "Remove a local gem from `gem local` management.",
+        usage: "remove <gem>",
+        arguments: "takes exactly one argument",
+        aliases: %w[delete],
+      },
+      "on"     => {
+        description: "Activates all registered local gems, or the specified gem, in bundler.",
+        usage: "on [gem]",
+        arguments: "takes any number of arguments",
+        aliases: %w[use activate enable renable reactivate],
+      },
+      "off"    => {
+        description: "Deactivates all registered local gems, or the specified gem, in bundler.",
+        usage: "off [gem]",
+        arguments: "takes any number of arguments",
+        aliases: %w[ignore deactivate disable],
+      },
+      "install" => {
+        description: "Adds `.gemlocal` and `.bundle` artifacts to project `.gitignore`",
+        usage: "install",
+        arguments: "takes zero arguments",
+        aliases: %w[init],
+      },
+      "help"   => {
+        description: "Displays help information, either about `gem local` or a `gem local` subcommand.",
+        usage: "help [cmd]",
+        arguments: "takes zero or one arguments",
+      },
+    }
+  end
+  
+  def available_cmds
+    cmds.map do |cmd, info|
+      [cmd, info[:aliases]]
+    end.flatten.compact
+  end
+
+# FORMATTING
+
+  def show_setting_for(name, setting)
+    "%-4.4s #{name} @ #{setting.location}" % "#{setting.status}:"
+  end
+
+  def info_for(cmd)
+    info = cmds[cmd.to_s]
+    usage_for(info) + "\n" + aliases_for(info) + "\n" + description_for(info)
+  end
+  
+  def usage_for(info)
+    "USAGE: #{info[:usage]}"
+  end
+  
+  def aliases_for(info)
+    "aliases: "+ Array(info[:aliases]).flatten.join(', ')
+  end
+
+  def description_for(info)
+    info[:description]
+  end
+  
+  def arity_error(cmd)
+    info = cmds[cmd.to_s]
+    raise "`gem local #{cmd}` #{info[:arguments]}" + "\n" + info_for(cmd)
+  end
+  
+# PLUMBING
 
   def config
     @config ||= read_config
   end
 
   def read_config
-    File.open(find_config, "a+") do |file|
+    File.open(find_config) do |file|
       lines = file.readlines
       config = Hash[
         lines.reject do |line|
           line.start_with? "#" or line.strip.empty?
         end.map do |line|
-          name, location, *args = line.strip.split
-          if name and location and args.empty?
-            [name, location]
+          status, name, location, *args = line.strip.split
+          if status and name and location and args.empty?
+            [name, Setting.new(location, status)]
           else
-            raise "`gem local` config in `#{path}` is corrupt, each non-empty non-commented line must contain a gem name and the local path to that gem, separated by a space"
+            raise "`gem local` config in `#{path}` is corrupt, each non-empty non-commented line must contain a status, a gem name, and the local path to that gem, separated by spaces\nerror at:\n#{line}"
           end
         end
       ]
     end
+  end
+  
+  def touch_file(path)
+    FileUtils.touch(path).unshift
   end
 
   def find_file(path)
@@ -171,13 +297,30 @@ private
   end
   
   def write_config(config)
-    File.open(find_config, "a+") do |file|
-      config.each do |name, location|
-        if name and location
-          file.puts "#{name} #{location}"
-        end
+    File.open(find_config, "w") do |file|
+      config.each do |name, setting|
+        file.puts "%-3.3s #{name} #{setting.location}" % setting.status
       end
     end
+  end
+  
+  def update_config(name, field, value)
+    new_config = config
+    new_setting = new_config[name]
+    new_setting.send(:"#{field}=", value)
+    new_config[name] = new_setting
+    write_config new_config
+    puts show_setting_for(name, new_setting)
+  end
+  
+  def bundler_add(name, setting)
+    Bundler.settings["local.#{name}"] = setting.location
+    !! Bundler.settings["local.#{name}"]
+  end
+  
+  def bundler_remove(name, setting)
+    Bundler.settings["local.#{name}"] = nil
+    not Bundler.settings["local.#{name}"]
   end
   
 end
