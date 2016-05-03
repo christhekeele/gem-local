@@ -1,32 +1,66 @@
-Gem::LocalCommand
+Command: gem local
+==================
 
-## Installation
+> **Lets you register and manage [local bundler git repos](http://bundler.io/v1.5/git.html#local) per-project.**
 
-Add this line to your application's Gemfile:
+Installation
+------------
 
-```ruby
-gem 'gem-local'
+Install this rubygems extension through rubygems:
+
+```sh
+gem install gem-local
 ```
 
-And then execute:
+Usage
+-----
 
-    $ bundle
+Inside a project with a `Gemfile` where you want to be able to toggle local bundler gem loadpaths, run:
 
-Or install it yourself as:
+```sh
+gem local install
+```
 
-    $ gem install gem-local
+Define the dependencies of this project that you have local copies of, and their locations:
 
-## Usage
+```sh
+gem local add my-dependency ~/code/ruby/gems/my-dependency
+```
 
-TODO: Write usage instructions here
+When you want to use your local copy, run
 
-## Development
+```sh
+gem local use my-dependency
+```
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+When you want to use the remote version again, run
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```sh
+gem local ignore my-dependency
+```
+
+You can use/ignore multiple gems by supplying a list, or you can use/ignore all at once by not specifying any gem in particular.
+
+If invocations of `bundle config local...` cause your `.gemlocal` file to get out of sync with bundler's settings, run
+
+```sh
+gem local rebuild
+```
+
+to update your file against bundler's configuration.
+
+For other commands and usage, see
+
+```sh
+gem local help
+```
+
+For details on a command, for example `install`, run
+
+```sh
+gem local help install
+```
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/gem-local.
-
+Bug reports and pull requests are welcome on GitHub at https://github.com/christhekeele/gem-local.

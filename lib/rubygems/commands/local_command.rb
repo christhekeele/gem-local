@@ -4,7 +4,7 @@ class Gem::Commands::LocalCommand < Gem::Command
   
   class Setting
     attr_accessor :location, :status
-    def initialize(location,  status = "on")
+    def initialize(location,  status = "off")
       @location, @status = location, status
     end
   end
@@ -21,14 +21,14 @@ The `gem local` command allows you to save, toggle, and recall per-project usage
   
   def arguments
     <<-ARGS
-add <gem> <path> | Adds or overwrites a local gem configuration.
-show [gem]       | Displays all or a particular local gem configuration.
-remove <gem>     | Removes a local gem from `gem local` configuration.
-on [gem, ...]    | Turns local gem(s) on.
-off [gem, ...]   | Turns local gem(s) off.
-rebuild          | Regenerates your `.gemlocal` from bundle config state.
-install          | Adds `.gemlocal` artifact to project `.gitignore`.
-help [cmd]       | Displays help information.
+add <gem> <path>  | Adds or overwrites a local gem configuration.
+status [gem]      | Displays all or a particular local gem configuration.
+remove <gem>      | Removes a local gem from `gem local` configuration.
+use [gem, ...]    | Enables local gem(s).
+ignore [gem, ...] | Disables local gem(s).
+rebuild           | Regenerates your `.gemlocal` from bundle config state.
+install           | Adds `.gemlocal` artifact to project `.gitignore`.
+help [cmd]        | Displays help information.
     ARGS
   end
   
@@ -62,7 +62,7 @@ help [cmd]       | Displays help information.
   end
   alias_method :new, :add
 
-  def show(name = nil, *args)
+  def status(name = nil, *args)
     if not name and args.empty?
       config.each do |name, setting|
         puts show_setting_for(name, setting)
@@ -71,13 +71,13 @@ help [cmd]       | Displays help information.
       if setting = config[name]
         puts show_setting_for(name, setting)
       else
-        raise "`gem local show` could not find `#{name}` in:\n#{find_config}"
+        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_config}"
       end
     else
       arity_error __method__
     end
   end
-  alias_method :status, :show
+  alias_method :show, :status
 
   def remove(name = nil, *args)
     if name and args.empty?
@@ -89,7 +89,7 @@ help [cmd]       | Displays help information.
   end
   alias_method :delete, :remove
   
-  def on(*names)
+  def use(*names)
     names = config.values if names.empty?
     names.each do |name|
       if setting = config[name]
@@ -99,17 +99,17 @@ help [cmd]       | Displays help information.
           raise "Could not activate gem, make sure `bundle config local.#{name}` #{setting.location} succeeds"
         end
       else
-        raise "`gem local on` could not find `#{name}` in:\n#{find_config}"
+        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_config}"
       end
     end
   end
-  alias_method :use, :on
-  alias_method :activate, :on
-  alias_method :enable, :on
-  alias_method :renable, :on
-  alias_method :reactivate, :on
+  alias_method :on, :use
+  alias_method :activate, :use
+  alias_method :enable, :use
+  alias_method :renable, :use
+  alias_method :reactivate, :use
   
-  def off(*names)
+  def ignore(*names)
     names = config.values if names.empty?
     names.each do |name|
       if setting = config[name]
@@ -119,13 +119,13 @@ help [cmd]       | Displays help information.
           raise "Could not deactivate gem, make sure `bundle config --delete local.#{name}` succeeds"
         end
       else
-        raise "`gem local off` could not find `#{name}` in:\n#{find_config}"
+        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_config}"
       end
     end
   end
-  alias_method :ignore, :off
-  alias_method :deactivate, :off
-  alias_method :disable, :off
+  alias_method :off, :ignore
+  alias_method :deactivate, :ignore
+  alias_method :disable, :ignore
   
   def rebuild(*args)
     if args.empty?
@@ -181,11 +181,11 @@ private
         arguments: "takes exactly two arguments",
         aliases: %w[new],
       },
-      "show"   => {
+      "status" => {
         description: "Displays the current local gem configuration, or the specified gem's config.",
-        usage: "show [gem]",
+        usage: "status [gem]",
         arguments: "takes zero or one arguments",
-        aliases: %w[status],
+        aliases: %w[show],
       },
       "remove" => {
         description: "Remove a local gem from `gem local` management.",
@@ -193,17 +193,17 @@ private
         arguments: "takes exactly one argument",
         aliases: %w[delete],
       },
-      "on"     => {
+      "use"    => {
         description: "Activates all registered local gems, or the specified gem, in bundler.",
-        usage: "on [gem]",
+        usage: "use [gem]",
         arguments: "takes any number of arguments",
-        aliases: %w[use activate enable renable reactivate],
+        aliases: %w[on activate enable renable reactivate],
       },
-      "off"    => {
+      "ignore"    => {
         description: "Deactivates all registered local gems, or the specified gem, in bundler.",
-        usage: "off [gem]",
+        usage: "ignore [gem]",
         arguments: "takes any number of arguments",
-        aliases: %w[ignore deactivate disable],
+        aliases: %w[off deactivate disable],
       },
       "rebuild" => {
         description: "Regenerates your local `.gemlocal` file from the bundle config if they get out of sync.",
