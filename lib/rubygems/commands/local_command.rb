@@ -195,13 +195,13 @@ private
         aliases: %w[delete],
       },
       "use"    => {
-        description: "Activates all registered local gems, or the specified gem, in bundler.",
+        description: "Activates all registered local gems, or the specified gems, in bundler.",
         usage: "use [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[on activate enable renable reactivate],
       },
       "ignore"    => {
-        description: "Deactivates all registered local gems, or the specified gem, in bundler.",
+        description: "Deactivates all registered local gems, or the specified gems, in bundler.",
         usage: "ignore [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[off remote deactivate disable],
