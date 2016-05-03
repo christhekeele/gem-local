@@ -124,6 +124,7 @@ help [cmd]        | Displays help information.
     end
   end
   alias_method :off, :ignore
+  alias_method :remote, :ignore
   alias_method :deactivate, :ignore
   alias_method :disable, :ignore
   
@@ -203,7 +204,7 @@ private
         description: "Deactivates all registered local gems, or the specified gem, in bundler.",
         usage: "ignore [gem]",
         arguments: "takes any number of arguments",
-        aliases: %w[off deactivate disable],
+        aliases: %w[off remote deactivate disable],
       },
       "rebuild" => {
         description: "Regenerates your local `.gemlocal` file from the bundle config if they get out of sync.",
