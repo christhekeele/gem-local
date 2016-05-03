@@ -33,7 +33,7 @@ help [cmd]        | Displays help information.
   end
   
   def usage
-    "#{program_name} subcommand <gem> <path>" + "\n" + arguments
+    "#{program_name} subcommand [args...]"
   end
   
   def execute
@@ -47,6 +47,23 @@ help [cmd]        | Displays help information.
       help
     end
   end
+  
+# Override core dispatcher to do our own help
+  def invoke_with_build_args(args, build_args)
+    handle_options args
+
+    options[:build_args] = build_args
+
+    self.ui = Gem::SilentUI.new if options[:silent]
+
+    if options[:help] then
+      puts full_help
+    elsif @when_invoked then
+      @when_invoked.call options
+    else
+      execute
+    end
+  end
 
 # COMMANDS
 
@@ -54,7 +71,7 @@ help [cmd]        | Displays help information.
     if name and location and args.empty?
       setting = Setting.new(location)
       if bundler_add name, setting
-        update_config(name, :status, setting.status)
+        update_config(name, location: setting.location, status: setting.status)
       end
     else
       arity_error __method__
@@ -94,7 +111,7 @@ help [cmd]        | Displays help information.
     names.each do |name|
       if setting = config[name]
         if bundler_add name, setting
-          update_config(name, :status, "on")
+          update_config(name, status: "on")
         else
           raise "Could not activate gem, make sure `bundle config local.#{name}` #{setting.location} succeeds"
         end
@@ -114,7 +131,7 @@ help [cmd]        | Displays help information.
     names.each do |name|
       if setting = config[name]
         if bundler_remove name, setting
-          update_config(name, :status, "off")
+          update_config(name, status: "off")
         else
           raise "Could not deactivate gem, make sure `bundle config --delete local.#{name}` succeeds"
         end
@@ -149,7 +166,7 @@ help [cmd]        | Displays help information.
     if args.empty?
       File.open(find_file('.gitignore'), "a+") do |file|
         %w[.bundle .gemlocal].each do |ignorable|
-          unless file.lines.any?{ |line| line.include? ignorable }
+          unless file.each_line.any?{ |line| line.include? ignorable }
             file.puts ignorable 
           end
         end
@@ -164,10 +181,26 @@ help [cmd]        | Displays help information.
     if not cmd and args.empty?
       puts description + "\n" + arguments
     elsif cmd
-      puts info_for(__method__)
+      puts info_for(cmd)
     else
       arity_error __method__
     end    
+  end
+  
+# Shows in `gem help local`
+  def full_help
+    [
+      usage, 
+      nil,
+      'Summary:',
+      summary,
+      nil,
+      'Description:',
+      description,
+      nil,
+      'Arguments:',
+      arguments,
+    ].join("\n")
   end
   
 private
@@ -178,49 +211,49 @@ private
     @cmds ||= {
       "add"    => {
         description: "Adds or overwrites a local gem configuration and activates the gem from sourcein bundler.",
-        usage: "add <gem> <path>",
+        usage: "gem local add <gem> <path>",
         arguments: "takes exactly two arguments",
         aliases: %w[new],
       },
       "status" => {
         description: "Displays the current local gem configuration, or the specified gem's config.",
-        usage: "status [gem]",
+        usage: "gem local status [gem]",
         arguments: "takes zero or one arguments",
         aliases: %w[show],
       },
       "remove" => {
         description: "Remove a local gem from `gem local` management.",
-        usage: "remove <gem>",
+        usage: "gem local remove <gem>",
         arguments: "takes exactly one argument",
         aliases: %w[delete],
       },
       "use"    => {
         description: "Activates all registered local gems, or the specified gems, in bundler.",
-        usage: "use [gem]",
+        usage: "gem local use [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[on activate enable renable reactivate],
       },
       "ignore"    => {
         description: "Deactivates all registered local gems, or the specified gems, in bundler.",
-        usage: "ignore [gem]",
+        usage: "gem local ignore [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[off remote deactivate disable],
       },
       "rebuild" => {
         description: "Regenerates your local `.gemlocal` file from the bundle config if they get out of sync.",
-        usage: "rebuild",
+        usage: "gem local rebuild",
         arguments: "takes zero arguments",
         aliases: %w[],
       },
       "install" => {
         description: "Adds `.gemlocal` and `.bundle` artifacts to project `.gitignore`",
-        usage: "install",
+        usage: "gem local install",
         arguments: "takes zero arguments",
         aliases: %w[init],
       },
       "help"   => {
         description: "Displays help information, either about `gem local` or a `gem local` subcommand.",
-        usage: "help [cmd]",
+        usage: "gem local help [cmd]",
         arguments: "takes zero or one arguments",
         aliases: %w[],
       },
@@ -249,7 +282,11 @@ private
   end
   
   def aliases_for(info)
-    "aliases: "+ Array(info[:aliases]).flatten.join(', ')
+    "aliases: " + if info[:aliases].length > 0 
+      Array(info[:aliases]).flatten.join(', ')
+    else
+      'none'
+    end
   end
 
   def description_for(info)
@@ -318,9 +355,11 @@ private
     end
   end
   
-  def update_config(name, field, value)
-    new_setting = config[name]
-    new_setting.send(:"#{field}=", value)
+  def update_config(name, properties = {})
+    new_setting = config[name] || Setting.new(nil)
+    properties.each do |field, value|
+      new_setting.send(:"#{field}=", value)
+    end
     config[name] = new_setting
     write_config config
     puts show_setting_for(name, new_setting)
