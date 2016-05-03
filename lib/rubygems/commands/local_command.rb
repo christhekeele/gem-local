@@ -33,7 +33,7 @@ help [cmd]        | Displays help information.
   end
   
   def usage
-    "#{program_name} subcommand <gem> <path>" + "\n" + arguments
+    "#{program_name} subcommand [args...]"
   end
   
   def execute
@@ -45,6 +45,23 @@ help [cmd]        | Displays help information.
       end
     else
       help
+    end
+  end
+  
+# Override core dispatcher to do our own help
+  def invoke_with_build_args(args, build_args)
+    handle_options args
+
+    options[:build_args] = build_args
+
+    self.ui = Gem::SilentUI.new if options[:silent]
+
+    if options[:help] then
+      puts full_help
+    elsif @when_invoked then
+      @when_invoked.call options
+    else
+      execute
     end
   end
 
@@ -164,10 +181,26 @@ help [cmd]        | Displays help information.
     if not cmd and args.empty?
       puts description + "\n" + arguments
     elsif cmd
-      puts info_for(__method__)
+      puts info_for(cmd)
     else
       arity_error __method__
     end    
+  end
+  
+# Shows in `gem help local`
+  def full_help
+    [
+      usage, 
+      nil,
+      'Summary:',
+      summary,
+      nil,
+      'Description:',
+      description,
+      nil,
+      'Arguments:',
+      arguments,
+    ].join("\n")
   end
   
 private
@@ -178,49 +211,49 @@ private
     @cmds ||= {
       "add"    => {
         description: "Adds or overwrites a local gem configuration and activates the gem from sourcein bundler.",
-        usage: "add <gem> <path>",
+        usage: "gem local add <gem> <path>",
         arguments: "takes exactly two arguments",
         aliases: %w[new],
       },
       "status" => {
         description: "Displays the current local gem configuration, or the specified gem's config.",
-        usage: "status [gem]",
+        usage: "gem local status [gem]",
         arguments: "takes zero or one arguments",
         aliases: %w[show],
       },
       "remove" => {
         description: "Remove a local gem from `gem local` management.",
-        usage: "remove <gem>",
+        usage: "gem local remove <gem>",
         arguments: "takes exactly one argument",
         aliases: %w[delete],
       },
       "use"    => {
         description: "Activates all registered local gems, or the specified gems, in bundler.",
-        usage: "use [gem]",
+        usage: "gem local use [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[on activate enable renable reactivate],
       },
       "ignore"    => {
         description: "Deactivates all registered local gems, or the specified gems, in bundler.",
-        usage: "ignore [gem]",
+        usage: "gem local ignore [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[off remote deactivate disable],
       },
       "rebuild" => {
         description: "Regenerates your local `.gemlocal` file from the bundle config if they get out of sync.",
-        usage: "rebuild",
+        usage: "gem local rebuild",
         arguments: "takes zero arguments",
         aliases: %w[],
       },
       "install" => {
         description: "Adds `.gemlocal` and `.bundle` artifacts to project `.gitignore`",
-        usage: "install",
+        usage: "gem local install",
         arguments: "takes zero arguments",
         aliases: %w[init],
       },
       "help"   => {
         description: "Displays help information, either about `gem local` or a `gem local` subcommand.",
-        usage: "help [cmd]",
+        usage: "gem local help [cmd]",
         arguments: "takes zero or one arguments",
         aliases: %w[],
       },
@@ -249,7 +282,11 @@ private
   end
   
   def aliases_for(info)
-    "aliases: "+ Array(info[:aliases]).flatten.join(', ')
+    "aliases: " + if info[:aliases].length > 0 
+      Array(info[:aliases]).flatten.join(', ')
+    else
+      'none'
+    end
   end
 
   def description_for(info)
