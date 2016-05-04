@@ -53,7 +53,14 @@ When you want to use the remote version again, run
 gem local ignore my-dependency
 ```
 
-This will remove it from your bundler config and update your `.gitlocal` accordingly to know it's been disabled.
+This will remove it from your bundler config and update your `.gitlocal` accordingly to know it's been disabled. If you've ever seen the message:
+
+```sh
+Cannot use local override for gem-name at path/to/gem because :branch is not specified in Gemfile.
+Specify a branch or use `bundle config --delete` to remove the local override
+```
+
+you've probably checked out a different version of your code without updating your bundle config. Now you can do so with `gem local off gem-name` and not completely forget how to re-configure things when you check your WIP branch back out.
 
 ### Multiple gems at once
 
