@@ -3,7 +3,7 @@ Command: gem local
 
 > **Lets you register and manage [local bundler git repos](http://bundler.io/v1.5/git.html#local) per-project.**
 
-If you're developing gem alongside projects that consume them, you've probably used `gem 'name', path: '~/local/path/to/gem'` in your Gemfile before.
+If you're developing a gem alongside projects that consume them, you've probably used `gem 'name', path: '~/local/path/to/gem'` in your Gemfile before.
 
 Of course, if you accidentally commit this, you'll probably cause somebody or someserver some grief down the line. This is why [local bundler git repos](http://bundler.io/v1.5/git.html#local) exist: so that by using `gem 'name', git: 'repo', branch: 'master'`, you can program against a local gem dependency while always leaving your Gemfile in a valid state.
 
