@@ -107,7 +107,7 @@ help [cmd]        | Displays help information.
   alias_method :delete, :remove
   
   def use(*names)
-    names = config.values if names.empty?
+    names = config.keys if names.empty?
     names.each do |name|
       if setting = config[name]
         if bundler_add name, setting
