@@ -94,6 +94,7 @@ help [cmd]        | Displays help information.
       arity_error __method__
     end
   end
+  alias_method :config, :status
   alias_method :show, :status
 
   def remove(name = nil, *args)
@@ -219,7 +220,7 @@ private
         description: "Displays the current local gem configuration, or the specified gem's config.",
         usage: "gem local status [gem]",
         arguments: "takes zero or one arguments",
-        aliases: %w[show],
+        aliases: %w[config show],
       },
       "remove" => {
         description: "Remove a local gem from `gem local` management.",
