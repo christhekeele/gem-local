@@ -71,7 +71,7 @@ help [cmd]        | Displays help information.
     if name and location and args.empty?
       setting = Setting.new(location)
       if bundler_add name, setting
-        update_config(name, location: setting.location, status: setting.status)
+        update_configuration(name, location: setting.location, status: setting.status)
       end
     else
       arity_error __method__
@@ -81,14 +81,14 @@ help [cmd]        | Displays help information.
 
   def status(name = nil, *args)
     if not name and args.empty?
-      config.each do |name, setting|
+      configuration.each do |name, setting|
         puts show_setting_for(name, setting)
       end
     elsif name
-      if setting = config[name]
+      if setting = configuration[name]
         puts show_setting_for(name, setting)
       else
-        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_config}"
+        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_configuration}"
       end
     else
       arity_error __method__
@@ -99,8 +99,8 @@ help [cmd]        | Displays help information.
 
   def remove(name = nil, *args)
     if name and args.empty?
-      config.delete(name)
-      write_config(config)
+      configuration.delete(name)
+      write_configuration(configuration)
     else
       arity_error __method__
     end
@@ -108,16 +108,16 @@ help [cmd]        | Displays help information.
   alias_method :delete, :remove
   
   def use(*names)
-    names = config.keys if names.empty?
+    names = configuration.keys if names.empty?
     names.each do |name|
-      if setting = config[name]
+      if setting = configuration[name]
         if bundler_add name, setting
-          update_config(name, status: "on")
+          update_configuration(name, status: "on")
         else
           raise "Could not activate gem, make sure `bundle config local.#{name}` #{setting.location} succeeds"
         end
       else
-        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_config}"
+        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_configuration}"
       end
     end
   end
@@ -128,16 +128,16 @@ help [cmd]        | Displays help information.
   alias_method :reactivate, :use
   
   def ignore(*names)
-    names = config.values if names.empty?
+    names = configuration.values if names.empty?
     names.each do |name|
-      if setting = config[name]
+      if setting = configuration[name]
         if bundler_remove name, setting
-          update_config(name, status: "off")
+          update_configuration(name, status: "off")
         else
           raise "Could not deactivate gem, make sure `bundle config --delete local.#{name}` succeeds"
         end
       else
-        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_config}"
+        raise "`gem local #{__method__}` could not find `#{name}` in:\n#{find_configuration}"
       end
     end
   end
@@ -148,12 +148,12 @@ help [cmd]        | Displays help information.
   
   def rebuild(*args)
     if args.empty?
-      config = read_config.dup
-      clear_config_cache
-      File.open(find_config, "w") do |file|
-        config.each do |name, old_setting|
+      configuration = read_configuration.dup
+      clear_configuration_cache
+      File.open(find_configuration, "w") do |file|
+        configuration.each do |name, old_setting|
           if setting = bundler_value(name, old_setting)
-            file.puts config_for(name, setting.location, setting.status)
+            file.puts configuration_for(name, setting.location, setting.status)
           end
         end
       end
@@ -217,7 +217,7 @@ private
         aliases: %w[new],
       },
       "status" => {
-        description: "Displays the current local gem configuration, or the specified gem's config.",
+        description: "Displays the current local gem configuration, or the specified gem's configuration.",
         usage: "gem local status [gem]",
         arguments: "takes zero or one arguments",
         aliases: %w[config show],
@@ -294,7 +294,7 @@ private
     info[:description]
   end
   
-  def config_for(name, location, status)
+  def configuration_for(name, location, status)
     "%-3.3s #{name} #{location}" % status
   end
   
@@ -305,17 +305,17 @@ private
   
 # PLUMBING
 
-  def config
-    @config ||= read_config
+  def configuration
+    @configuration ||= read_configuration
   end
   
-  def clear_config_cache
-    @config = nil
+  def clear_configuration_cache
+    @configuration = nil
   end
 
-  def read_config
-    File.open(find_config) do |file|
-      config = Hash[
+  def read_configuration
+    File.open(find_configuration) do |file|
+      Hash[
         file.readlines.reject do |line|
           line.start_with? "#" or line.strip.empty?
         end.map do |line|
@@ -323,7 +323,7 @@ private
           if status and name and location and args.empty?
             [name, Setting.new(location, status)]
           else
-            raise "`gem local` config in `#{find_config}` is corrupt, each non-empty non-commented line must contain a status, a gem name, and the local path to that gem, separated by spaces\nerror at:\n#{line}"
+            raise "`gem local` config in `#{find_configuration}` is corrupt, each non-empty non-commented line must contain a status, a gem name, and the local path to that gem, separated by spaces\nerror at:\n#{line}"
           end
         end
       ]
@@ -342,27 +342,27 @@ private
     end
   end
   
-  def find_config
+  def find_configuration
     find_file Bundler.default_gemfile.dirname + '.gemlocal'
   rescue Bundler::GemfileNotFound
     raise "`gem local` could not locate a `Gemfile` file, which it uses to determine the root of your project"
   end
   
-  def write_config(config)
-    File.open(find_config, "w") do |file|
-      config.each do |name, setting|
-        file.puts config_for(name, setting.location, setting.status)
+  def write_configuration(configuration)
+    File.open(find_configuration, "w") do |file|
+      configuration.each do |name, setting|
+        file.puts configuration_for(name, setting.location, setting.status)
       end
     end
   end
   
-  def update_config(name, properties = {})
-    new_setting = config[name] || Setting.new(nil)
+  def update_configuration(name, properties = {})
+    new_setting = configuration[name] || Setting.new(nil)
     properties.each do |field, value|
       new_setting.send(:"#{field}=", value)
     end
-    config[name] = new_setting
-    write_config config
+    configuration[name] = new_setting
+    write_configuration configuration
     puts show_setting_for(name, new_setting)
   end
   
