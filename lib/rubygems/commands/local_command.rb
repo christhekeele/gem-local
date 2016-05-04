@@ -1,7 +1,8 @@
 require 'bundler'
-require 'gem/local/version'
 
 class Gem::Commands::LocalCommand < Gem::Command
+  
+  VERSION = "0.1.9"
   
   class Setting
     attr_accessor :location, :status
@@ -190,9 +191,9 @@ version           | Displays gem-local version.
     end    
   end
   
-  def help(*args)
+  def version(*args)
     if args.empty?
-      puts "v#{Gem::Local::VERSION}"
+      puts "v#{Gem::Commands::LocalCommand::VERSION}"
     else
       arity_error __method__
     end    

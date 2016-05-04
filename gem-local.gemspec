@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "gem/local/version"
+require "rubygems/commands/local_command"
 
 Gem::Specification.new do |spec|
   spec.name          = "gem-local"
-  spec.version       = Gem::Local::VERSION
+  spec.version       = Gem::Commands::LocalCommand::VERSION
   spec.authors       = ["Chris Keele"]
   spec.email         = ["dev@chriskeele.com"]
 
