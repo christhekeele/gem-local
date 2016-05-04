@@ -54,11 +54,11 @@ When you want to use your local copy, run
 gem local use my-dependency
 ```
 
-It updates the **local** bundler config (not *global*, as bundler does by default, which many tutorials run with) to refer to the path you supplied it.
+It updates the **local** bundler config (not *global*, as bundler does by default, which many guides run with) to refer to the path you supplied it.
 
 #### Ignoring local repos
 
-When you want to use the standar remote version of the dependency again, run
+When you want to use the standard remote version of the dependency again, run
 
 ```sh
 gem local ignore my-dependency
