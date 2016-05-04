@@ -3,7 +3,7 @@ Command: gem local
 
 > **Lets you register and manage [local bundler git repos](http://bundler.io/v1.5/git.html#local) per-project.**
 
-If you're developing gem alongside projects that consume them, you've probably used `gem 'name', path: '~/local/path/to/gem'` in your Gemfile before.
+If you're developing a gem alongside projects that consume them, you've probably used `gem 'name', path: '~/local/path/to/gem'` in your Gemfile before.
 
 Of course, if you accidentally commit this, you'll probably cause somebody or someserver some grief down the line. This is why [local bundler git repos](http://bundler.io/v1.5/git.html#local) exist: so that by using `gem 'name', git: 'repo', branch: 'master'`, you can program against a local gem dependency while always leaving your Gemfile in a valid state.
 
@@ -54,11 +54,11 @@ When you want to use your local copy, run
 gem local use my-dependency
 ```
 
-It updates the **local** bundler config (not *global*, as bundler does by default, which many tutorials run with) to refer to the path you supplied it.
+It updates the **local** bundler config (not *global*, as bundler does by default, which many guides run with) to refer to the path you supplied it.
 
 #### Ignoring local repos
 
-When you want to use the standar remote version of the dependency again, run
+When you want to use the standard remote version of the dependency again, run
 
 ```sh
 gem local ignore my-dependency
