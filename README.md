@@ -33,7 +33,7 @@ Define the dependencies of this project that you have local copies of, and their
 gem local add my-dependency ~/code/ruby/gems/my-dependency
 ```
 
-This lets `git local` know about this dependency.
+This lets `git local` know about this dependency. Note that relative paths are supported, and `~` gets expanded, which is the format `bundle config` expects.
 
 ### Using local repos
 
