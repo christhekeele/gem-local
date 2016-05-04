@@ -1,4 +1,5 @@
 require 'bundler'
+require 'gem/local/version'
 
 class Gem::Commands::LocalCommand < Gem::Command
   
@@ -29,6 +30,7 @@ ignore [gem, ...] | Disables local gem(s).
 rebuild           | Regenerates your `.gemlocal` from bundle config state.
 install           | Adds `.gemlocal` artifact to project `.gitignore`.
 help [cmd]        | Displays help information.
+version           | Displays gem-local version.
     ARGS
   end
   
@@ -188,6 +190,14 @@ help [cmd]        | Displays help information.
     end    
   end
   
+  def help(*args)
+    if args.empty?
+      puts "v#{Gem::Local::VERSION}"
+    else
+      arity_error __method__
+    end    
+  end
+  
 # Shows in `gem help local`
   def full_help
     [
@@ -256,6 +266,12 @@ private
         description: "Displays help information, either about `gem local` or a `gem local` subcommand.",
         usage: "gem local help [cmd]",
         arguments: "takes zero or one arguments",
+        aliases: %w[],
+      },
+      "version"   => {
+        description: "Displays the version of gem-local you have installed, chiefly for debugging purposes.",
+        usage: "gem local version",
+        arguments: "takes no arguments",
         aliases: %w[],
       },
     }
