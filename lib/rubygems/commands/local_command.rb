@@ -1,8 +1,7 @@
+require 'rubygems/command'
 require 'bundler'
 
 class Gem::Commands::LocalCommand < Gem::Command
-  
-  VERSION = "0.1.9"
   
   class Setting
     attr_accessor :location, :status
@@ -221,7 +220,7 @@ private
 
   def cmds
     @cmds ||= {
-      "add"    => {
+      "add" => {
         description: "Adds or overwrites a local gem configuration and activates the gem from sourcein bundler.",
         usage: "gem local add <gem> <path>",
         arguments: "takes exactly two arguments",
@@ -239,13 +238,13 @@ private
         arguments: "takes exactly one argument",
         aliases: %w[delete],
       },
-      "use"    => {
+      "use" => {
         description: "Activates all registered local gems, or the specified gems, in bundler.",
         usage: "gem local use [gem]",
         arguments: "takes any number of arguments",
         aliases: %w[on activate enable renable reactivate],
       },
-      "ignore"    => {
+      "ignore" => {
         description: "Deactivates all registered local gems, or the specified gems, in bundler.",
         usage: "gem local ignore [gem]",
         arguments: "takes any number of arguments",
@@ -263,13 +262,13 @@ private
         arguments: "takes zero arguments",
         aliases: %w[init],
       },
-      "help"   => {
+      "help" => {
         description: "Displays help information, either about `gem local` or a `gem local` subcommand.",
         usage: "gem local help [cmd]",
         arguments: "takes zero or one arguments",
         aliases: %w[],
       },
-      "version"   => {
+      "version" => {
         description: "Displays the version of gem-local you have installed, chiefly for debugging purposes.",
         usage: "gem local version",
         arguments: "takes no arguments",
@@ -384,12 +383,12 @@ private
   end
   
   def bundler_add(name, setting)
-    Bundler.settings["local.#{name}"] = setting.location
+    Bundler.settings.set_local("local.#{name}", setting.location)
     !! Bundler.settings["local.#{name}"]
   end
   
   def bundler_remove(name, setting)
-    Bundler.settings["local.#{name}"] = nil
+    Bundler.settings.set_local("local.#{name}", nil)
     not Bundler.settings["local.#{name}"]
   end
   

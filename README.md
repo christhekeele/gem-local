@@ -7,9 +7,9 @@ If you're developing a gem alongside projects that consume them, you've probably
 
 Of course, if you accidentally commit this, you'll probably cause somebody or someserver some grief down the line. This is why [local bundler git repos](http://bundler.io/v1.5/git.html#local) exist: so that by using `gem 'name', git: 'repo', branch: 'master'`, you can program against a local gem dependency while always leaving your Gemfile in a valid state.
 
-However, actually *using* `bundler config local....` is a bit of a pain:
+However, actually *using* `bundle config local.xxx` is a bit of a pain:
 
-- you have to remember to use the `--local` flag every invocation, otherwise you might bork other local projects using the dependency
+- you have to remember to use the `--local` flag as well every invocation, otherwise you might bork other local projects using the dependency
 - you have to remember to unset the configuration if you check out a version of your Gemfile without the `gem git:, branch:` bit
 - you have to remember what that configuration was and to reset it when you checkout back to your branch
 - if you frequently develop against local gems, you have to do this for every gem, in every project, and remember where you are in the above workflow every time you revisit a project after a few days
