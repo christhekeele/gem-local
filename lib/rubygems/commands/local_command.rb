@@ -1,6 +1,8 @@
 require 'rubygems/command'
 require 'bundler'
 
+require "rubygems/commands/local_command/version"
+
 class Gem::Commands::LocalCommand < Gem::Command
   
   class Setting
