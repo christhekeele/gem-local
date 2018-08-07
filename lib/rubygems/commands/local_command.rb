@@ -2,6 +2,7 @@ require 'rubygems/command'
 require 'bundler'
 
 require "rubygems/commands/local_command/version"
+require "rubygems/commands/local_command/artifacts"
 
 class Gem::Commands::LocalCommand < Gem::Command
   
@@ -170,7 +171,7 @@ version           | Displays gem-local version.
   def install(*args)
     if args.empty?
       File.open(find_file('.gitignore'), "a+") do |file|
-        %w[.bundle .gemlocal].each do |ignorable|
+        Gem::Commands::LocalCommand::ARTIFACTS.each do |ignorable|
           unless file.each_line.any?{ |line| line.include? ignorable }
             file.puts ignorable 
           end
@@ -336,12 +337,19 @@ private
       Hash[
         file.readlines.reject do |line|
           line.start_with? "#" or line.strip.empty?
-        end.map do |line|
+        end.map.with_index do |line, index|
           status, name, location, *args = line.strip.split
           if status and name and location and args.empty?
             [name, Setting.new(location, status)]
           else
-            raise "`gem local` config in `#{find_configuration}` is corrupt, each non-empty non-commented line must contain a status, a gem name, and the local path to that gem, separated by spaces\nerror at:\n#{line}"
+            raise <<-ERR
+`gem local` config is corrupt
+    Delete #{find_configuration} and run `gem local rebuild` to resolve
+    Error at line #{index + 1}:
+      #{line.strip}
+    Each non-empty, non-commented line must contain a status (on/off), a gem name,
+    and the local path to that gem, separated by spaces.
+            ERR
           end
         end
       ]

@@ -1,7 +1,9 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
 require "rubygems/commands/local_command/version"
+require "rubygems/commands/local_command/artifacts"
 
 Gem::Specification.new do |spec|
   spec.name          = "gem-local"
@@ -16,6 +18,8 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+  
+  spec.post_install_message = "Make sure to add artifacts (#{Gem::Commands::LocalCommand::ARTIFACTS.join(", ")}) to your project's .gitignores by running `gem local install`"
 
   spec.add_development_dependency "bundler", "~> 1.11"
   spec.add_development_dependency "rake", "~> 10.0"
